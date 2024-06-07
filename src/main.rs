@@ -13,6 +13,7 @@ use log4rs::append::console::{ConsoleAppender, Target};
 use log4rs::append::file::FileAppender;
 use log4rs::config::{Appender, Config, Root};
 use log4rs::encode::pattern::PatternEncoder;
+use log::error;
 use log::LevelFilter;
 use strum::{EnumString, IntoStaticStr};
 use strum::IntoEnumIterator;
@@ -29,7 +30,8 @@ pub enum ImageFormatEnum {
     #[strum(serialize = "dds")]
     DDS,
 }
-// TODO: debug mod
+
+// TODO: separate files
 struct MyApp {
     selected_source_dir: Option<String>,
     selected_dest_dir: Option<String>,
@@ -146,24 +148,24 @@ impl eframe::App for MyApp {
                     });
                 }
             });
-            
+
             if self.is_convert_success.is_some() {
                 let is_convert_success = self.is_convert_success.unwrap();
-                
+
                 if is_convert_success {
                     ui.label(RichText::new("Success!").color(Color32::GREEN));
                 } else {
                     ui.label(RichText::new("Failed!").color(Color32::RED));
                 }
             }
-            
+
             ui.separator();
 
             ui.with_layout(egui::Layout::left_to_right(egui::Align::Center), |ui| {
                 ui.vertical(|ui| {
                     self.table_ui(ui);
                 });
-                
+
                 // show image when column selected
                 if self.selected_row_index > -1 {
                     let files = self.files.clone().unwrap();
@@ -176,10 +178,10 @@ impl eframe::App for MyApp {
                     );
                 }
             });
-            
+
             // Bottom panel
             egui::TopBottomPanel::bottom("bottom_panel").show(ctx, |ui| {
-                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center),|ui| {
+                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                     ui.label(format!("v{}", &env!("CARGO_PKG_VERSION")));
                     egui::warn_if_debug_build(ui);
                     ui.hyperlink_to("Project homepage", env!("CARGO_PKG_HOMEPAGE"));
