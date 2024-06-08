@@ -2036,6 +2036,7 @@ dependencies = [
  "log",
  "log4rs",
  "pathdiff",
+ "rayon",
  "rfd",
  "strum",
  "walkdir",
