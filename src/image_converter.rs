@@ -24,7 +24,10 @@ fn images_to_dds_sequential(files: Vec<String>, source_dir: String, output_path:
     for path_string in files {
         let cloned_path = path_string.clone();
         // in order to support processing directory recursive, get diff between current path and source path
-        let mut source_relative_path = diff_paths(Path::new(&cloned_path), Path::new(&source_dir.clone())).unwrap();
+        let mut source_relative_path = diff_paths(Path::new(&cloned_path), Path::new(&source_dir.clone())).ok_or_else(||
+            anyhow::anyhow!("Failed to compute relative path for {}", cloned_path)
+        )?;
+
         let image = image_dds::image::open(Path::new(&path_string))?;
         let rgba_image = image.to_rgba8();
 
@@ -86,7 +89,9 @@ fn dds_to_images_sequential(files: Vec<String>, source_dir: String, output_path:
     for path_string in files {
         let cloned_path = path_string.clone();
         // in order to support processing directory recursive, get diff between current path and source path
-        let mut source_relative_path = diff_paths(Path::new(&cloned_path), Path::new(&source_dir.clone())).unwrap();
+        let mut source_relative_path = diff_paths(Path::new(&cloned_path), Path::new(&source_dir.clone())).ok_or_else(||
+            anyhow::anyhow!("Failed to compute relative path for {}", cloned_path)
+        )?;
 
         let mut reader = std::fs::File::open(path_string)?;
         let dds = ddsfile::Dds::read(&mut reader).unwrap();
