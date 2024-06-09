@@ -156,6 +156,7 @@ impl eframe::App for ImageConverterApp {
                 },
             );
 
+            #[cfg(debug_assertions)]
             if ui.button("debug").clicked() {
                 self.is_debug_panel_open = true;
             }
@@ -227,6 +228,7 @@ impl eframe::App for ImageConverterApp {
             });
 
         // debug panel
+        #[cfg(debug_assertions)]
         egui::Window::new("Debug Panel")
             .open(&mut self.is_debug_panel_open)
             .default_width(280.0)
