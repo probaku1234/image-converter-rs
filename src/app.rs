@@ -26,6 +26,7 @@ pub(crate) struct ImageConverterApp {
     selected_row_index: i8,
     is_window_open: bool,
     is_convert_success: Option<bool>,
+    is_debug_panel_open: bool,
     tx: Sender<bool>,
     rx: Receiver<bool>,
 }
@@ -34,18 +35,7 @@ impl eframe::App for ImageConverterApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui_extras::install_image_loaders(ctx);
 
-        if self.is_window_open {
-            egui::Window::new("Modal")
-                .open(&mut self.is_window_open)
-                .title_bar(false)
-                .show(ctx, |ui| {
-                    ui.vertical_centered(|ui| {
-                        ui.add(egui::Spinner::new().size(60.0));
-                        ui.label("converting...");
-                    });
-                });
-        }
-
+        // main panel
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.set_enabled(!self.is_window_open);
 
@@ -163,6 +153,10 @@ impl eframe::App for ImageConverterApp {
                 },
             );
 
+            if ui.button("debug").clicked() {
+                self.is_debug_panel_open = true;
+            }
+
             if self.is_convert_success.is_some() {
                 let is_convert_success = self.is_convert_success.unwrap();
 
@@ -217,6 +211,58 @@ impl eframe::App for ImageConverterApp {
                 }
             }
         });
+
+        // convert panel
+        egui::Window::new("")
+            .open(&mut self.is_window_open)
+            .title_bar(false)
+            .show(ctx, |ui| {
+                ui.vertical_centered(|ui| {
+                    ui.add(egui::Spinner::new().size(60.0));
+                    ui.label("converting...");
+                });
+            });
+
+        // debug panel
+        egui::Window::new("Debug Panel")
+            .open(&mut self.is_debug_panel_open)
+            .default_width(280.0)
+            .show(ctx, |ui| {
+                egui::Grid::new("my_grid")
+                    .num_columns(2)
+                    .spacing([40.0, 4.0])
+                    .striped(true)
+                    .show(ui, |ui| {
+                        let mut selected_source_dir =
+                            self.selected_source_dir.clone().unwrap_or("".to_string());
+                        ui.label("selected source dir");
+                        ui.add(
+                            egui::TextEdit::singleline(&mut selected_source_dir)
+                                .hint_text("Write something here"),
+                        );
+                        ui.end_row();
+
+                        let mut selected_dist_dir =
+                            self.selected_source_dir.clone().unwrap_or("".to_string());
+                        ui.label("selected dist dir");
+                        ui.add(
+                            egui::TextEdit::singleline(&mut selected_dist_dir)
+                                .hint_text("Write something here"),
+                        );
+                        ui.end_row();
+
+                        let files_size = self.files.clone().unwrap_or(vec![]).len();
+                        ui.label("files size");
+                        ui.label(format!("{}", files_size));
+                        ui.end_row();
+
+                        ui.label("is window open");
+                        ui.end_row();
+
+                        ui.label("is convert success");
+                        ui.end_row();
+                    });
+            });
     }
 }
 
@@ -232,6 +278,7 @@ impl ImageConverterApp {
             selected_row_index: -1,
             is_window_open: false,
             is_convert_success: None,
+            is_debug_panel_open: false,
             tx,
             rx,
         }
