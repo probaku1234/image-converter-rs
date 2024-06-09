@@ -2,6 +2,7 @@ use std::path::Path;
 
 use crate::app::ImageFormatEnum;
 use image_dds::ddsfile;
+use log::{debug, info};
 use pathdiff::diff_paths;
 use rayon::prelude::*;
 
@@ -28,12 +29,15 @@ fn images_to_dds_sequential(
     output_path: String,
     dds_format: image_dds::ImageFormat,
 ) -> anyhow::Result<()> {
+    info!("converting start");
+
     // to prevent processing dds->dds, filter out dds files from files
     let files: Vec<String> = files
         .iter()
         .filter(|path| !path.ends_with(".dds"))
         .cloned()
         .collect();
+    let files_size = files.len();
 
     for path_string in files {
         let cloned_path = path_string.clone();
@@ -55,9 +59,11 @@ fn images_to_dds_sequential(
 
         source_relative_path.set_extension("dds");
         let output_path = Path::new(&output_path).join(source_relative_path);
-        let mut writer = std::io::BufWriter::new(std::fs::File::create(output_path)?);
+        let mut writer = std::io::BufWriter::new(std::fs::File::create(&output_path)?);
         dds.write(&mut writer)?;
+        debug!("{:?} created", output_path);
     }
+    info!("converting ended. total files: {}", files_size);
 
     Ok(())
 }
@@ -68,11 +74,14 @@ fn images_to_dds_parallel(
     output_path: String,
     dds_format: image_dds::ImageFormat,
 ) -> anyhow::Result<()> {
+    info!("converting start");
+
     // to prevent processing dds->dds, filter out dds files from files
     let files: Vec<String> = files
         .into_iter()
         .filter(|path| !path.ends_with(".dds"))
         .collect();
+    let files_size = files.len();
 
     // Use par_chunks to process files in parallel batches
     files
@@ -102,12 +111,14 @@ fn images_to_dds_parallel(
 
                     source_relative_path.set_extension("dds");
                     let output_path = Path::new(&output_path).join(source_relative_path);
-                    let mut writer = std::io::BufWriter::new(std::fs::File::create(output_path)?);
+                    let mut writer = std::io::BufWriter::new(std::fs::File::create(&output_path)?);
                     dds.write(&mut writer)?;
+                    debug!("{:?} created", output_path);
 
                     Ok(())
                 })
         })?;
+    info!("converting ended. total files: {}", files_size);
 
     Ok(())
 }
@@ -118,6 +129,8 @@ fn dds_to_images_sequential(
     output_path: String,
     output_format: ImageFormatEnum,
 ) -> anyhow::Result<()> {
+    info!("converting start");
+
     // to prevent processing dds->dds, filter out dds files from files
     let sss: &str = output_format.into();
     let files: Vec<String> = files
@@ -125,6 +138,7 @@ fn dds_to_images_sequential(
         .filter(|path| !path.ends_with(sss))
         .cloned()
         .collect();
+    let files_size = files.len();
 
     for path_string in files {
         let cloned_path = path_string.clone();
@@ -143,8 +157,10 @@ fn dds_to_images_sequential(
         source_relative_path.set_extension(sss);
         let output_path = Path::new(&output_path).join(source_relative_path);
 
-        image.save(output_path)?;
+        image.save(&output_path)?;
+        debug!("{:?} created", output_path);
     }
+    info!("converting ended. total files: {}", files_size);
 
     Ok(())
 }
@@ -155,6 +171,8 @@ fn dds_to_images_parallel(
     output_path: String,
     output_format: ImageFormatEnum,
 ) -> anyhow::Result<()> {
+    info!("converting start");
+
     // to prevent processing dds->dds, filter out dds files from files
     let sss: &str = output_format.into();
     let files: Vec<String> = files
@@ -162,6 +180,7 @@ fn dds_to_images_parallel(
         .filter(|path| !path.ends_with(sss))
         .cloned()
         .collect();
+    let files_size = files.len();
 
     files
         .par_chunks(5)
@@ -189,11 +208,13 @@ fn dds_to_images_parallel(
                     source_relative_path.set_extension(sss);
                     let output_path = Path::new(&output_path).join(source_relative_path);
 
-                    image.save(output_path)?;
+                    image.save(&output_path)?;
+                    debug!("{:?} created", output_path);
 
                     Ok(())
                 })
         })?;
+    info!("converting ended. total files: {}", files_size);
 
     Ok(())
 }

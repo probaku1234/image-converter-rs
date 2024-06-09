@@ -3,7 +3,7 @@ use std::thread;
 
 use eframe::epaint::Color32;
 use egui::RichText;
-use log::error;
+use log::{debug, error, info};
 use strum::{EnumString, IntoEnumIterator, IntoStaticStr};
 use walkdir::WalkDir;
 
@@ -47,6 +47,7 @@ impl eframe::App for ImageConverterApp {
                         self.selected_source_dir =
                             Some(files.unwrap().to_str().unwrap().to_string());
                         self.files = None;
+                        info!("source dir: {:?}", self.selected_source_dir);
                     }
                 }
 
@@ -58,6 +59,7 @@ impl eframe::App for ImageConverterApp {
 
                     if files.is_some() {
                         self.selected_dest_dir = Some(files.unwrap().to_str().unwrap().to_string());
+                        info!("dest dir: {:?}", self.selected_source_dir);
                     }
                 }
 
@@ -91,6 +93,7 @@ impl eframe::App for ImageConverterApp {
                         .map(|file| String::from(file.path().to_str().unwrap()))
                         .collect(),
                 );
+                debug!("files: {:?}", self.files);
             }
 
             ui.horizontal(|ui| {
