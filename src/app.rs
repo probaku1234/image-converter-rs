@@ -27,6 +27,7 @@ pub(crate) struct ImageConverterApp {
     is_window_open: bool,
     is_convert_success: Option<bool>,
     is_debug_panel_open: bool,
+    set_window_open_flag: bool,
     tx: Sender<bool>,
     rx: Receiver<bool>,
 }
@@ -161,16 +162,6 @@ impl eframe::App for ImageConverterApp {
                 self.is_debug_panel_open = true;
             }
 
-            if self.is_convert_success.is_some() {
-                let is_convert_success = self.is_convert_success.unwrap();
-
-                if is_convert_success {
-                    ui.label(RichText::new("Success!").color(Color32::GREEN));
-                } else {
-                    ui.label(RichText::new("Failed!").color(Color32::RED));
-                }
-            }
-
             ui.separator();
 
             ui.with_layout(egui::Layout::left_to_right(egui::Align::Center), |ui| {
@@ -201,7 +192,6 @@ impl eframe::App for ImageConverterApp {
             let result = self.rx.try_recv();
             match result {
                 Ok(success) => {
-                    self.is_window_open = false;
                     if success {
                         self.is_convert_success = Some(true);
                     } else {
@@ -214,6 +204,11 @@ impl eframe::App for ImageConverterApp {
                     }
                 }
             }
+
+            if self.set_window_open_flag {
+                self.is_window_open = false;
+                self.set_window_open_flag = false;
+            }
         });
 
         // convert panel
@@ -222,8 +217,19 @@ impl eframe::App for ImageConverterApp {
             .title_bar(false)
             .show(ctx, |ui| {
                 ui.vertical_centered(|ui| {
-                    ui.add(egui::Spinner::new().size(60.0));
-                    ui.label("converting...");
+                    if let Some(is_convert_success) = self.is_convert_success {
+                        if is_convert_success {
+                            ui.label(RichText::new("Success!").color(Color32::GREEN));
+                        } else {
+                            ui.label(RichText::new("Failed!").color(Color32::RED));
+                        }
+                        if ui.button("Done!").clicked() {
+                            self.set_window_open_flag = true;
+                        }
+                    } else {
+                        ui.add(egui::Spinner::new().size(60.0));
+                        ui.label("converting...");
+                    }
                 });
             });
 
@@ -284,6 +290,7 @@ impl ImageConverterApp {
             is_window_open: false,
             is_convert_success: None,
             is_debug_panel_open: false,
+            set_window_open_flag: false,
             tx,
             rx,
         }
