@@ -221,22 +221,23 @@ impl eframe::App for ImageConverterApp {
         egui::Window::new("")
             .open(&mut self.is_window_open)
             .title_bar(false)
+            .resizable(false)
             .default_pos(center_pos)
             .anchor(Align2::CENTER_CENTER, Vec2::ZERO)
             .show(ctx, |ui| {
                 ui.vertical_centered(|ui| {
                     if let Some(is_convert_success) = self.is_convert_success {
                         if is_convert_success {
-                            ui.label(RichText::new("Success!").color(Color32::GREEN));
+                            ui.label(RichText::new("Success!").color(Color32::GREEN).size(30.0));
                         } else {
-                            ui.label(RichText::new("Failed!").color(Color32::RED));
+                            ui.label(RichText::new("Failed!").color(Color32::RED).size(30.0));
                         }
                         if ui.button("Done!").clicked() {
                             self.set_window_open_flag = true;
                         }
                     } else {
-                        ui.add(egui::Spinner::new().size(60.0));
-                        ui.label("converting...");
+                        ui.add(egui::Spinner::new().size(100.0));
+                        ui.label(RichText::new("converting...").size(30.0));
                     }
                 });
             });
