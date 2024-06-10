@@ -28,6 +28,7 @@ pub(crate) struct ImageConverterApp {
     is_convert_success: Option<bool>,
     is_debug_panel_open: bool,
     set_window_open_flag: bool,
+    use_sequential_convert: bool,
     tx: Sender<bool>,
     rx: Receiver<bool>,
 }
@@ -140,6 +141,7 @@ impl eframe::App for ImageConverterApp {
                             .unwrap_or(self.selected_source_dir.clone().unwrap());
                         let output_format = self.output_format.clone();
                         let dds_format = self.dds_format.clone();
+                        let use_sequential_convert = self.use_sequential_convert.clone();
 
                         let tx = self.tx.clone();
 
@@ -150,6 +152,7 @@ impl eframe::App for ImageConverterApp {
                                 selected_dist_dir,
                                 output_format,
                                 dds_format,
+                                use_sequential_convert,
                             );
                             tx.send(result).expect("failed to send result");
                         });
@@ -277,6 +280,10 @@ impl eframe::App for ImageConverterApp {
 
                         ui.label("is convert success");
                         ui.end_row();
+
+                        ui.label("use sequential convert");
+                        ui.checkbox(&mut self.use_sequential_convert, "");
+                        ui.end_row();
                     });
             });
     }
@@ -296,6 +303,7 @@ impl ImageConverterApp {
             is_convert_success: None,
             is_debug_panel_open: false,
             set_window_open_flag: false,
+            use_sequential_convert: false,
             tx,
             rx,
         }

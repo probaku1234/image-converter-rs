@@ -2,7 +2,7 @@ use std::path::Path;
 
 use crate::app::ImageFormatEnum;
 use image_dds::ddsfile;
-use log::{debug, info};
+use log::{debug, error, info};
 use pathdiff::diff_paths;
 use rayon::prelude::*;
 
@@ -12,13 +12,32 @@ pub fn convert(
     output_path: String,
     output_format: ImageFormatEnum,
     dds_format: image_dds::ImageFormat,
+    use_sequential_convert: bool,
 ) -> bool {
     return match output_format {
         ImageFormatEnum::DDS => {
-            images_to_dds_sequential(files, source_dir, output_path, dds_format).is_ok()
+            let convert_result = if use_sequential_convert {
+                images_to_dds_sequential(files, source_dir, output_path, dds_format)
+            } else {
+                images_to_dds_parallel(files, source_dir, output_path, dds_format)
+            };
+            if convert_result.is_err() {
+                error!("convert failed {:?}", convert_result.err());
+                return false;
+            }
+            true
         }
         ImageFormatEnum::PNG => {
-            dds_to_images_sequential(files, source_dir, output_path, output_format).is_ok()
+            let convert_result = if use_sequential_convert {
+                dds_to_images_sequential(files, source_dir, output_path, output_format)
+            } else {
+                dds_to_images_parallel(files, source_dir, output_path, output_format)
+            };
+            if convert_result.is_err() {
+                error!("convert failed {:?}", convert_result.err());
+                return false;
+            }
+            true
         }
     };
 }
