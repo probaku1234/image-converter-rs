@@ -2,7 +2,7 @@ use std::sync::mpsc::{channel, Receiver, Sender, TryRecvError};
 use std::thread;
 
 use eframe::epaint::Color32;
-use egui::RichText;
+use egui::{Align2, Pos2, RichText, Vec2};
 use log::{debug, error, info};
 use strum::{EnumString, IntoEnumIterator, IntoStaticStr};
 use walkdir::WalkDir;
@@ -211,10 +211,15 @@ impl eframe::App for ImageConverterApp {
             }
         });
 
+        let screen_rect = ctx.screen_rect();
+        let center_pos = Pos2::new(screen_rect.width() / 2.0, screen_rect.height() / 2.0);
+
         // convert panel
         egui::Window::new("")
             .open(&mut self.is_window_open)
             .title_bar(false)
+            .default_pos(center_pos)
+            .anchor(Align2::CENTER_CENTER, Vec2::ZERO)
             .show(ctx, |ui| {
                 ui.vertical_centered(|ui| {
                     if let Some(is_convert_success) = self.is_convert_success {
