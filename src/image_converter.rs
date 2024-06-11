@@ -27,11 +27,11 @@ pub fn convert(
             }
             true
         }
-        ImageFormatEnum::PNG => {
+        _ => {
             let convert_result = if use_sequential_convert {
-                dds_to_images_sequential(files, source_dir, output_path, output_format)
+                images_to_images_sequential(files, source_dir, output_path, output_format)
             } else {
-                dds_to_images_parallel(files, source_dir, output_path, output_format)
+                images_to_images_parallel(files, source_dir, output_path, output_format)
             };
             if convert_result.is_err() {
                 error!("convert failed {:?}", convert_result.err());
@@ -142,7 +142,7 @@ fn images_to_dds_parallel(
     Ok(())
 }
 
-fn dds_to_images_sequential(
+fn images_to_images_sequential(
     files: Vec<String>,
     source_dir: String,
     output_path: String,
@@ -167,16 +167,21 @@ fn dds_to_images_sequential(
                 || anyhow::anyhow!("Failed to compute relative path for {}", cloned_path),
             )?;
 
-        let mut reader = std::fs::File::open(path_string)?;
-        let dds = ddsfile::Dds::read(&mut reader).unwrap();
-
-        let image = image_dds::image_from_dds(&dds, 0)?;
-
-        let sss: &str = output_format.into();
-        source_relative_path.set_extension(sss);
+        let output_format_string: &str = output_format.into();
+        source_relative_path.set_extension(output_format_string);
         let output_path = Path::new(&output_path).join(source_relative_path);
 
-        image.save(&output_path)?;
+        if cloned_path.ends_with(".dds") {
+            let mut reader = std::fs::File::open(path_string)?;
+            let dds = ddsfile::Dds::read(&mut reader)?;
+
+            let image = image_dds::image_from_dds(&dds, 0)?;
+
+            image.save(&output_path)?;
+        } else {
+            let image = image_dds::image::open(Path::new(&path_string))?;
+            image.save(&output_path).unwrap();
+        }
         debug!("{:?} created", output_path);
     }
     info!("converting ended. total files: {}", files_size);
@@ -184,7 +189,7 @@ fn dds_to_images_sequential(
     Ok(())
 }
 
-fn dds_to_images_parallel(
+fn images_to_images_parallel(
     files: Vec<String>,
     source_dir: String,
     output_path: String,
@@ -218,16 +223,22 @@ fn dds_to_images_parallel(
                                 )
                             })?;
 
-                    let mut reader = std::fs::File::open(path_string)?;
-                    let dds = ddsfile::Dds::read(&mut reader).unwrap();
-
-                    let image = image_dds::image_from_dds(&dds, 0)?;
-
-                    let sss: &str = output_format.into();
-                    source_relative_path.set_extension(sss);
+                    let output_format_string: &str = output_format.into();
+                    source_relative_path.set_extension(output_format_string);
                     let output_path = Path::new(&output_path).join(source_relative_path);
 
-                    image.save(&output_path)?;
+                    if cloned_path.ends_with(".dds") {
+                        let mut reader = std::fs::File::open(path_string)?;
+                        let dds = ddsfile::Dds::read(&mut reader)?;
+
+                        let image = image_dds::image_from_dds(&dds, 0)?;
+
+                        image.save(&output_path)?;
+                    } else {
+                        let image = image_dds::image::open(Path::new(path_string))?;
+                        image.save(&output_path).unwrap();
+                    }
+
                     debug!("{:?} created", output_path);
 
                     Ok(())
@@ -276,7 +287,7 @@ mod tests {
         let output_format = ImageFormatEnum::PNG;
 
         let convert_result =
-            dds_to_images_sequential(files, source_dir, output_path, output_format);
+            images_to_images_sequential(files, source_dir, output_path, output_format);
 
         assert!(convert_result.is_ok());
 
@@ -285,6 +296,28 @@ mod tests {
 
         fs::remove_file("./test_images/o-a_base2.png").unwrap();
         fs::remove_file("./test_images/sub/o-a_base2.png").unwrap();
+    }
+
+    #[test]
+    fn test_images_to_images() {
+        let files = vec![
+            "./test_images/o-a_base.png".to_string(),
+            "./test_images/sub/o-a_base.png".to_string(),
+        ];
+        let source_dir = "./test_images".to_string();
+        let output_path = "./test_images".to_string();
+        let output_format = ImageFormatEnum::TGA;
+
+        let convert_result =
+            images_to_images_sequential(files, source_dir, output_path, output_format);
+
+        assert!(convert_result.is_ok());
+
+        assert!(Path::new("./test_images/o-a_base.tga").exists());
+        assert!(Path::new("./test_images/sub/o-a_base.tga").exists());
+
+        fs::remove_file("./test_images/o-a_base.tga").unwrap();
+        fs::remove_file("./test_images/sub/o-a_base.tga").unwrap();
     }
 
     #[test]

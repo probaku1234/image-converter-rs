@@ -15,6 +15,12 @@ pub enum ImageFormatEnum {
     PNG,
     #[strum(serialize = "dds")]
     DDS,
+    #[strum(serialize = "tga")]
+    TGA,
+    #[strum(serialize = "JPEG")]
+    JPEG,
+    #[strum(serialize = "JPG")]
+    JPG,
 }
 
 pub(crate) struct ImageConverterApp {
@@ -77,10 +83,12 @@ impl eframe::App for ImageConverterApp {
                         .filter_map(|file| file.ok())
                         .filter(|file| file.metadata().unwrap().is_file())
                         .filter(|file| {
-                            let array: [String; 3] = [
+                            let array: [String; 5] = [
                                 "dds".parse().unwrap(),
                                 "png".parse().unwrap(),
                                 "jpg".parse().unwrap(),
+                                "jpeg".parse().unwrap(),
+                                "tga".parse().unwrap(),
                             ];
                             array.contains(
                                 &file
@@ -104,8 +112,12 @@ impl eframe::App for ImageConverterApp {
                     .show_ui(ui, |ui| {
                         ui.style_mut().wrap = Some(false);
                         ui.set_min_width(60.0);
+
                         ui.selectable_value(&mut self.output_format, ImageFormatEnum::PNG, "PNG");
                         ui.selectable_value(&mut self.output_format, ImageFormatEnum::DDS, "DDS");
+                        ui.selectable_value(&mut self.output_format, ImageFormatEnum::JPEG, "JPEG");
+                        ui.selectable_value(&mut self.output_format, ImageFormatEnum::JPG, "JPG");
+                        ui.selectable_value(&mut self.output_format, ImageFormatEnum::TGA, "TGA");
                     });
 
                 if self.output_format == ImageFormatEnum::DDS {
@@ -211,6 +223,7 @@ impl eframe::App for ImageConverterApp {
             if self.set_window_open_flag {
                 self.is_window_open = false;
                 self.set_window_open_flag = false;
+                self.files = None; // set None to refresh files list when convert done
             }
         });
 

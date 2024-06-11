@@ -9,7 +9,7 @@ edition = "2021"
 eframe = { version = "0.27.2", features = ["persistence"] }
 egui = "0.27.2"
 egui_extras = { version = "0.27.2", features = ["all_loaders"] }
-image = {version = "0.25.1", features = ["dds", "jpeg", "png"]}
+image = {version = "0.25.1", features = ["dds", "jpeg", "png", "tga",]}
 walkdir = "2.5.0"
 image_dds = { version = "0.5.1", features = ["default"] }
 strum = "0.26.2"
