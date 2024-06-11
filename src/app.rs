@@ -32,6 +32,7 @@ pub(crate) struct ImageConverterApp {
     selected_row_index: i8,
     is_window_open: bool,
     is_convert_success: Option<i8>,
+    #[cfg(debug_assertions)]
     is_debug_panel_open: bool,
     set_window_open_flag: bool,
     use_sequential_convert: bool,
@@ -311,6 +312,7 @@ impl ImageConverterApp {
             selected_row_index: -1,
             is_window_open: false,
             is_convert_success: None,
+            #[cfg(debug_assertions)]
             is_debug_panel_open: false,
             set_window_open_flag: false,
             use_sequential_convert: false,
