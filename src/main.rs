@@ -1,9 +1,9 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+use egui::IconData;
 use std::io::Cursor;
 use std::path::Path;
 use std::sync::Arc;
-use egui::IconData;
 
 use log::LevelFilter;
 use log4rs::append::console::{ConsoleAppender, Target};
@@ -75,7 +75,7 @@ fn main() -> eframe::Result<()> {
         viewport: egui::ViewportBuilder::default().with_icon(icon_data),
         ..Default::default()
     };
-    
+
     eframe::run_native(
         "Image Converter",
         options,
