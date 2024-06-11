@@ -31,12 +31,12 @@ pub(crate) struct ImageConverterApp {
     dds_format: image_dds::ImageFormat,
     selected_row_index: i8,
     is_window_open: bool,
-    is_convert_success: Option<bool>,
+    is_convert_success: Option<i8>,
     is_debug_panel_open: bool,
     set_window_open_flag: bool,
     use_sequential_convert: bool,
-    tx: Sender<bool>,
-    rx: Receiver<bool>,
+    tx: Sender<i8>,
+    rx: Receiver<i8>,
 }
 
 impl eframe::App for ImageConverterApp {
@@ -207,11 +207,7 @@ impl eframe::App for ImageConverterApp {
             let result = self.rx.try_recv();
             match result {
                 Ok(success) => {
-                    if success {
-                        self.is_convert_success = Some(true);
-                    } else {
-                        self.is_convert_success = Some(false);
-                    }
+                    self.is_convert_success = Some(success);
                 }
                 Err(e) => {
                     if e == TryRecvError::Disconnected {
@@ -240,7 +236,7 @@ impl eframe::App for ImageConverterApp {
             .show(ctx, |ui| {
                 ui.vertical_centered(|ui| {
                     if let Some(is_convert_success) = self.is_convert_success {
-                        if is_convert_success {
+                        if is_convert_success >= 0 {
                             ui.label(RichText::new("Success!").color(Color32::GREEN).size(30.0));
                         } else {
                             ui.label(RichText::new("Failed!").color(Color32::RED).size(30.0));

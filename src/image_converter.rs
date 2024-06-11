@@ -13,7 +13,15 @@ pub fn convert(
     output_format: ImageFormatEnum,
     dds_format: image_dds::ImageFormat,
     use_sequential_convert: bool,
-) -> bool {
+) -> i8 {
+    let output_format_string: &str = output_format.into();
+    let files: Vec<String> = files
+        .iter()
+        .filter(|path| !path.ends_with(format!(".{}", output_format_string).as_str())) // to prevent processing same image format, filter out from files
+        .filter(|path| Path::new(path).exists()) // filter out non exist files
+        .cloned()
+        .collect();
+
     return match output_format {
         ImageFormatEnum::DDS => {
             let convert_result = if use_sequential_convert {
@@ -23,9 +31,9 @@ pub fn convert(
             };
             if convert_result.is_err() {
                 error!("convert failed {:?}", convert_result.err());
-                return false;
+                return -1;
             }
-            true
+            convert_result.unwrap() as i8
         }
         _ => {
             let convert_result = if use_sequential_convert {
@@ -35,9 +43,9 @@ pub fn convert(
             };
             if convert_result.is_err() {
                 error!("convert failed {:?}", convert_result.err());
-                return false;
+                return -1;
             }
-            true
+            convert_result.unwrap() as i8
         }
     };
 }
@@ -47,15 +55,9 @@ fn images_to_dds_sequential(
     source_dir: String,
     output_path: String,
     dds_format: image_dds::ImageFormat,
-) -> anyhow::Result<()> {
+) -> anyhow::Result<usize> {
     info!("converting start");
 
-    // to prevent processing dds->dds, filter out dds files from files
-    let files: Vec<String> = files
-        .iter()
-        .filter(|path| !path.ends_with(".dds"))
-        .cloned()
-        .collect();
     let files_size = files.len();
 
     for path_string in files {
@@ -84,7 +86,7 @@ fn images_to_dds_sequential(
     }
     info!("converting ended. total files: {}", files_size);
 
-    Ok(())
+    Ok(files_size)
 }
 
 fn images_to_dds_parallel(
@@ -92,14 +94,9 @@ fn images_to_dds_parallel(
     source_dir: String,
     output_path: String,
     dds_format: image_dds::ImageFormat,
-) -> anyhow::Result<()> {
+) -> anyhow::Result<usize> {
     info!("converting start");
 
-    // to prevent processing dds->dds, filter out dds files from files
-    let files: Vec<String> = files
-        .into_iter()
-        .filter(|path| !path.ends_with(".dds"))
-        .collect();
     let files_size = files.len();
 
     // Use par_chunks to process files in parallel batches
@@ -139,7 +136,7 @@ fn images_to_dds_parallel(
         })?;
     info!("converting ended. total files: {}", files_size);
 
-    Ok(())
+    Ok(files_size)
 }
 
 fn images_to_images_sequential(
@@ -147,16 +144,9 @@ fn images_to_images_sequential(
     source_dir: String,
     output_path: String,
     output_format: ImageFormatEnum,
-) -> anyhow::Result<()> {
+) -> anyhow::Result<usize> {
     info!("converting start");
 
-    // to prevent processing dds->dds, filter out dds files from files
-    let sss: &str = output_format.into();
-    let files: Vec<String> = files
-        .iter()
-        .filter(|path| !path.ends_with(sss))
-        .cloned()
-        .collect();
     let files_size = files.len();
 
     for path_string in files {
@@ -186,7 +176,7 @@ fn images_to_images_sequential(
     }
     info!("converting ended. total files: {}", files_size);
 
-    Ok(())
+    Ok(files_size)
 }
 
 fn images_to_images_parallel(
@@ -194,16 +184,9 @@ fn images_to_images_parallel(
     source_dir: String,
     output_path: String,
     output_format: ImageFormatEnum,
-) -> anyhow::Result<()> {
+) -> anyhow::Result<usize> {
     info!("converting start");
 
-    // to prevent processing dds->dds, filter out dds files from files
-    let sss: &str = output_format.into();
-    let files: Vec<String> = files
-        .iter()
-        .filter(|path| !path.ends_with(sss))
-        .cloned()
-        .collect();
     let files_size = files.len();
 
     files
@@ -246,7 +229,7 @@ fn images_to_images_parallel(
         })?;
     info!("converting ended. total files: {}", files_size);
 
-    Ok(())
+    Ok(files_size)
 }
 
 #[cfg(test)]
@@ -318,6 +301,75 @@ mod tests {
 
         fs::remove_file("./test_images/o-a_base.tga").unwrap();
         fs::remove_file("./test_images/sub/o-a_base.tga").unwrap();
+    }
+
+    #[test]
+    fn test_convert_non_exist_file() {
+        let files = vec!["invalid path".to_string()];
+        let source_dir = "./test_images".to_string();
+        let output_path = "./test_images".to_string();
+        let output_format = ImageFormatEnum::TGA;
+
+        let convert_result = convert(
+            files,
+            source_dir,
+            output_path,
+            output_format,
+            image_dds::ImageFormat::BC1RgbaUnormSrgb,
+            true,
+        );
+
+        assert_eq!(convert_result, 0);
+    }
+
+    #[test]
+    fn test_should_only_convert_different_image_format() {
+        let files = vec![
+            "./test_images/o-a_base.png".to_string(),
+            "./test_images/o-a_base2.dds".to_string(),
+        ];
+        let source_dir = "./test_images".to_string();
+        let output_path = "./test_images".to_string();
+        let output_format = ImageFormatEnum::PNG;
+
+        let convert_result = convert(
+            files,
+            source_dir,
+            output_path,
+            output_format,
+            image_dds::ImageFormat::BC1RgbaUnormSrgb,
+            true,
+        );
+
+        assert_eq!(convert_result, 1);
+        assert!(Path::new("./test_images/o-a_base2.png").exists());
+
+        fs::remove_file("./test_images/o-a_base2.png").unwrap();
+    }
+
+    #[test]
+    fn test_use_parallel() {
+        let files = vec![
+            "./test_images/o-a_base.png".to_string(),
+            "./test_images/o-a_base2.dds".to_string(),
+        ];
+        let source_dir = "./test_images".to_string();
+        let output_path = "./test_images".to_string();
+        let output_format = ImageFormatEnum::PNG;
+
+        let convert_result = convert(
+            files,
+            source_dir,
+            output_path,
+            output_format,
+            image_dds::ImageFormat::BC1RgbaUnormSrgb,
+            false,
+        );
+
+        assert_eq!(convert_result, 1);
+        assert!(Path::new("./test_images/o-a_base2.png").exists());
+
+        fs::remove_file("./test_images/o-a_base2.png").unwrap();
     }
 
     #[test]
