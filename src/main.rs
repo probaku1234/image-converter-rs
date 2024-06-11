@@ -1,6 +1,9 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+use std::io::Cursor;
 use std::path::Path;
+use std::sync::Arc;
+use egui::IconData;
 
 use log::LevelFilter;
 use log4rs::append::console::{ConsoleAppender, Target};
@@ -49,12 +52,33 @@ fn init_logging() -> anyhow::Result<()> {
     Ok(())
 }
 
+fn load_embedded_icon() -> Arc<IconData> {
+    let icon_bytes = include_bytes!("../assets/logo.ico"); // use this for release build
+    let img = image::load(Cursor::new(&icon_bytes[..]), image::ImageFormat::Ico)
+        .expect("Failed to load embedded icon")
+        .into_rgba8();
+    let (width, height) = img.dimensions();
+    let rgba = img.into_raw();
+
+    Arc::new(IconData {
+        rgba,
+        width,
+        height,
+    })
+}
+
 fn main() -> eframe::Result<()> {
     init_logging().expect("initializing logging should be success");
 
+    let icon_data = load_embedded_icon();
+    let options = eframe::NativeOptions {
+        viewport: egui::ViewportBuilder::default().with_icon(icon_data),
+        ..Default::default()
+    };
+    
     eframe::run_native(
         "Image Converter",
-        eframe::NativeOptions::default(),
+        options,
         Box::new(|ctx| Box::new(app::ImageConverterApp::new(ctx))),
     )
 }
