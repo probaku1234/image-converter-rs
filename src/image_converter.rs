@@ -180,7 +180,7 @@ fn images_to_images_sequential(
             image.save(&output_path)?;
         } else {
             let image = image_dds::image::open(Path::new(&path_string))?;
-            image.save(&output_path).unwrap();
+            image.save(&output_path)?;
         }
         debug!("{:?} created", output_path);
     }
@@ -236,7 +236,7 @@ fn images_to_images_parallel(
                         image.save(&output_path)?;
                     } else {
                         let image = image_dds::image::open(Path::new(path_string))?;
-                        image.save(&output_path).unwrap();
+                        image.save(&output_path)?;
                     }
 
                     debug!("{:?} created", output_path);
