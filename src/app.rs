@@ -1,8 +1,10 @@
+use std::path::Path;
 use std::sync::mpsc::{channel, Receiver, Sender, TryRecvError};
 use std::thread;
 
 use eframe::epaint::Color32;
-use egui::{Align2, Pos2, RichText, Vec2};
+use egui::{Align2, Pos2, Rect, RichText, Vec2};
+use image::io::Reader;
 use log::{debug, error, info};
 use strum::{EnumString, IntoEnumIterator, IntoStaticStr};
 use walkdir::WalkDir;
@@ -181,8 +183,9 @@ impl eframe::App for ImageConverterApp {
             ui.separator();
 
             ui.with_layout(egui::Layout::left_to_right(egui::Align::Center), |ui| {
+                let mut first_row_top_right_pos = Pos2::new(0.0, 0.0);
                 ui.vertical(|ui| {
-                    self.table_ui(ui);
+                    first_row_top_right_pos = self.table_ui(ui);
                 });
 
                 // show image when column selected
@@ -191,7 +194,20 @@ impl eframe::App for ImageConverterApp {
                     let index = self.selected_row_index.clone();
                     let current_file = &files[index as usize];
 
+                    // in order to get top pos of table, subtract table header height from y pos
+                    let dimension_label_pos =
+                        Pos2::new(first_row_top_right_pos.x, first_row_top_right_pos.y - 20.0);
+                    let image_dimension =
+                        self.get_image_dimension(current_file).unwrap_or_else(|e| {
+                            error!("failed to get image dimension {:?}", e);
+                            (0, 0)
+                        });
+
                     ui.add(egui::Image::new(format!("file://{current_file}")).rounding(5.0));
+                    ui.put(
+                        Rect::from_min_size(dimension_label_pos, Vec2::new(100.0, 20.0)),
+                        egui::Label::new(format!("{} x {}", image_dimension.0, image_dimension.1)),
+                    );
                 }
             });
 
@@ -321,8 +337,9 @@ impl ImageConverterApp {
         }
     }
 
-    fn table_ui(&mut self, ui: &mut egui::Ui) {
+    fn table_ui(&mut self, ui: &mut egui::Ui) -> Pos2 {
         use egui_extras::{Column, TableBuilder};
+        let mut row_top_right_corner_pos = Pos2::new(0.0, 0.0);
 
         let available_height = ui.available_height();
         let table = TableBuilder::new(ui)
@@ -342,7 +359,7 @@ impl ImageConverterApp {
                     });
                 })
                 .body(|mut body| {
-                    for file_path in files {
+                    for (i, file_path) in files.iter().enumerate() {
                         body.row(30.0, |mut row| {
                             let row_index = row.index();
 
@@ -352,10 +369,16 @@ impl ImageConverterApp {
                             });
 
                             self.toggle_row_selection(row.index(), &row.response());
+
+                            // store first column's right top pos
+                            if i == 0 {
+                                row_top_right_corner_pos = row.response().rect.right_top()
+                            }
                         });
                     }
                 });
         }
+        row_top_right_corner_pos
     }
 
     fn toggle_row_selection(&mut self, row_index: usize, row_response: &egui::Response) {
@@ -366,5 +389,13 @@ impl ImageConverterApp {
                 self.selected_row_index = -1;
             }
         }
+    }
+
+    fn get_image_dimension(&self, path: &String) -> anyhow::Result<(u32, u32)> {
+        let path = Path::new(path);
+        let reader = Reader::open(path)?;
+        let dimensions = reader.into_dimensions()?;
+
+        Ok(dimensions)
     }
 }
