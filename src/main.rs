@@ -79,6 +79,12 @@ fn main() -> eframe::Result<()> {
     eframe::run_native(
         "Image Converter",
         options,
-        Box::new(|ctx| Box::new(app::ImageConverterApp::new(ctx))),
+        Box::new(|ctx| {
+            let mut fonts = egui::FontDefinitions::default();
+            egui_phosphor::add_to_fonts(&mut fonts, egui_phosphor::Variant::Regular);
+
+            ctx.egui_ctx.set_fonts(fonts);
+            Box::new(app::ImageConverterApp::new(ctx))
+        }),
     )
 }

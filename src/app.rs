@@ -377,7 +377,28 @@ impl ImageConverterApp {
                         });
                     }
                 });
+
+            let refresh_button_pos = Pos2::new(
+                row_top_right_corner_pos.x - 30.0,
+                row_top_right_corner_pos.y - 25.0,
+            );
+
+            if ui
+                .put(
+                    Rect::from_min_size(refresh_button_pos, Vec2::new(20.0, 20.0)),
+                    egui::Button::new(
+                        RichText::new(format!("{}", egui_phosphor::regular::ARROW_CLOCKWISE))
+                            .size(20.0),
+                    ),
+                )
+                .clicked()
+            {
+                // set to initial value to prevent render image
+                self.selected_row_index = -1;
+                self.files = None;
+            }
         }
+
         row_top_right_corner_pos
     }
 
