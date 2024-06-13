@@ -5,7 +5,7 @@ use std::io::Cursor;
 use std::path::Path;
 use std::sync::Arc;
 
-use log::LevelFilter;
+use log::{error, LevelFilter};
 use log4rs::append::console::{ConsoleAppender, Target};
 use log4rs::append::file::FileAppender;
 use log4rs::config::{Appender, Config, Root};
@@ -54,9 +54,13 @@ fn init_logging() -> anyhow::Result<()> {
 
 fn load_embedded_icon() -> Arc<IconData> {
     let icon_bytes = include_bytes!("../assets/logo.ico"); // use this for release build
-    let img = image::load(Cursor::new(&icon_bytes[..]), image::ImageFormat::Ico)
-        .expect("Failed to load embedded icon")
-        .into_rgba8();
+    let img_result = image::load(Cursor::new(&icon_bytes[..]), image::ImageFormat::Ico);
+    if img_result.is_err() {
+        error!("failed to get icon: {:?}", img_result.err());
+        return Arc::new(IconData::default());
+    }
+    let img = img_result.unwrap().into_rgba8();
+
     let (width, height) = img.dimensions();
     let rgba = img.into_raw();
 
@@ -66,9 +70,10 @@ fn load_embedded_icon() -> Arc<IconData> {
         height,
     })
 }
-
 fn main() -> eframe::Result<()> {
-    init_logging().expect("initializing logging should be success");
+    init_logging().unwrap_or_else(|e| {
+        eprintln!("failed to init logging: {:?}", e);
+    });
 
     let icon_data = load_embedded_icon();
     let options = eframe::NativeOptions {
