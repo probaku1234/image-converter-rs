@@ -303,9 +303,11 @@ impl eframe::App for ImageConverterApp {
                         ui.end_row();
 
                         ui.label("is window open");
+                        ui.label(format!("{:?}", self.is_window_open));
                         ui.end_row();
 
                         ui.label("is convert success");
+                        ui.label(format!("{:?}", self.is_convert_success));
                         ui.end_row();
 
                         ui.label("use sequential convert");
